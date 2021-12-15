@@ -21,28 +21,6 @@ la suite, mais dans les grandes lignes:
   seront relevées à l'issue de la deadline qui est fixée au
 
   > 20 Janvier 2022 à minuit
-
-* concernant le barême, la note sur 20 sera décomposée comme ceci
-  * 9 points pour la première partie (v0)
-  * 6 points pour la seconde partie (v1)
-  * 5 points pour la troisième partie (v2)
-
-  de plus  pour chaque partie, on donne
-  * la moitié des points pour les tests; cette note reflète le fait que votre
-    code fait bien ce qui est demandé
-  * un quart des points pour la lisibilité du code, ce qui prend en compte
-    * le respect de la norme de présentation pep008
-    * la présence de commentaires aux endroits épineux
-    * le choix des noms de variables, fonctions et classes
-  * un quart des points sont donnés sur le bon usage des concepts du langage
-
-* dernière recommandation, il est important que vous **validiez**, et
-  éventuellement déverminiez, vous-même votre code, en le lançant
-  interactivement, dans une session `ipython` par exemple; et cela **avant** de
-  lancer en aveugle la batterie de tests automatiques: ces derniers ne vous
-  donneront pas les messages d'erreur ni le contexte, c'est très peu adapté
-  pour du code qui vient juste d'être écrit.
-
 ## Projet et Livrables
 
 Ce dépôt git contient principalement les fichiers:
