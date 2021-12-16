@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import notebook_v0 as n0
+
 """
 an object-oriented version of the notebook toolbox
 """
@@ -33,7 +35,9 @@ class CodeCell:
     """
 
     def __init__(self, ipynb):
-        pass
+        self.id = ipynb['id']
+        self.source = ipynb['source']
+        self.execution_count = ipynb['execution_count']
 
 class MarkdownCell:
     r"""A Cell of Markdown markup in a Jupyter notebook.
@@ -63,7 +67,8 @@ class MarkdownCell:
     """
 
     def __init__(self, ipynb):
-        pass
+        self.id = ipynb['id']
+        self.source = ipynb['source']
 
 class Notebook:
     r"""A Jupyter Notebook.
@@ -93,9 +98,10 @@ class Notebook:
             >>> isinstance(nb.cells[0], Cell)
             True
     """
-
+    ##DEFINIR LE TYPE CELL
     def __init__(self, ipynb):
-        pass
+        self.version = n0.get_format_version(ipynb)
+        self.cells = [MarkdownCell(cell) if cell['cell_type'] == 'markdown' else CodeCell(cell) for cell in n0.get_cells(ipynb)]
 
     @staticmethod
     def from_file(filename):
@@ -107,7 +113,7 @@ class Notebook:
             >>> nb.version
             '4.5'
         """
-        pass
+        return Notebook(n0.load_ipynb(filename))
 
     def __iter__(self):
         r"""Iterate the cells of the notebook.

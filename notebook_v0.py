@@ -10,13 +10,14 @@ import base64
 import io
 import json
 import pprint
+from typing_extensions import Concatenate
 
 # Third-Party Libraries
 import numpy as np
 import PIL.Image  # pillow
 
 
-def load_ipynb(filename):
+def load_ipynb(filename) -> dict:
     r"""
     Load a jupyter notebook .ipynb file (JSON) as a Python dict.
 
@@ -50,7 +51,10 @@ def load_ipynb(filename):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    pass
+    f = open(filename)
+    data = json.load(f)
+    f.close()
+    return data
 
 
 def save_ipynb(ipynb, filename):
@@ -73,7 +77,9 @@ def save_ipynb(ipynb, filename):
         True
 
     """
-    pass
+    f = open(filename, 'a')
+    f.write(json.dumps(ipynb))
+    f.close()
 
 
 def get_format_version(ipynb):
@@ -90,7 +96,7 @@ def get_format_version(ipynb):
         >>> get_format_version(ipynb)
         '4.5'
     """
-    pass
+    return f"{ipynb['nbformat']}.{ipynb['nbformat_minor']}"
 
 
 def get_metadata(ipynb):
@@ -114,7 +120,7 @@ def get_metadata(ipynb):
                            'pygments_lexer': 'ipython3',
                            'version': '3.9.7'}}
     """
-    pass
+    return ipynb['metadata']
 
 
 def get_cells(ipynb):
@@ -148,7 +154,7 @@ def get_cells(ipynb):
           'metadata': {},
           'source': ['Goodbye! 👋']}]
     """
-    pass
+    return ipynb['cells']
 
 
 def to_percent(ipynb):
@@ -175,7 +181,22 @@ def to_percent(ipynb):
         ...     with open(notebook_file.with_suffix(".py"), "w", encoding="utf-8") as output:
         ...         print(percent_code, file=output)
     """
-    pass
+    text = ""
+    cells = get_cells(ipynb)
+    for cell in cells:
+        cell_type = cell['cell_type']
+        if cell_type == 'markdown':
+            text += '# %% [markdown]\n'
+            for line in cell['source']:
+                text += '# '
+                text += line
+            text += '\n\n'
+        elif cell_type == 'code':
+            text += '# %%\n'
+            for line in cell['source']:
+                text += line
+            text += '\n\n'
+    return text[:-1]
 
 
 def starboard_html(code):
@@ -232,8 +253,38 @@ def to_starboard(ipynb, html=False):
         ...     with open(notebook_file.with_suffix(".html"), "w", encoding="utf-8") as output:
         ...         print(starboard_html, file=output)
     """
-    pass
-
+    if html:
+        text = ""
+        cells = get_cells(ipynb)
+        for cell in cells:
+            cell_type = cell['cell_type']
+            if cell_type == 'markdown':
+                text += '# %% [markdown]\n'
+                for line in cell['source']:
+                    text += line
+                text += '\n'
+            elif cell_type == 'code':
+                text += '# %% [python]\n'
+                for line in cell['source']:
+                    text += line
+                text += '\n'
+        return starboard_html(text[:-1])
+    else:
+        text = ""
+        cells = get_cells(ipynb)
+        for cell in cells:
+            cell_type = cell['cell_type']
+            if cell_type == 'markdown':
+                text += '# %% [markdown]\n'
+                for line in cell['source']:
+                    text += line
+                text += '\n'
+            elif cell_type == 'code':
+                text += '# %% [python]\n'
+                for line in cell['source']:
+                    text += line
+                text += '\n'
+        return text[:-1]
 
 # Outputs
 # ------------------------------------------------------------------------------
@@ -288,7 +339,10 @@ def clear_outputs(ipynb):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    pass
+    for cell in ipynb['cells']:
+        if cell['cell_type'] == 'code':
+            cell['execution_count'] = None
+            cell['outputs'] = []
 
 
 def get_stream(ipynb, stdout=True, stderr=False):
@@ -306,7 +360,16 @@ def get_stream(ipynb, stdout=True, stderr=False):
         👋 Hello world! 🌍
         🔥 This is fine. 🔥 (https://gunshowcomic.com/648)
     """
-    pass
+    text = ""
+    for cell in get_cells(ipynb):
+        if cell['cell_type'] == 'code':
+            for output in cell['outputs']:
+                if stdout and output['name'] == 'stdout':
+                    text += ''.join(output['text'])
+                elif stderr and output['name'] == 'stderr':
+                    text += ''.join(output['text'])
+    return text
+            
 
 
 def get_exceptions(ipynb):
@@ -328,7 +391,13 @@ def get_exceptions(ipynb):
         TypeError("unsupported operand type(s) for +: 'int' and 'str'")
         Warning('🌧️  light rain')
     """
-    pass
+    errors = []
+    for cell in get_cells(ipynb):
+        if cell['cell_type'] == 'code':
+            for output in cell['outputs']:
+                if output['output_type'] == 'error':
+                    errors.append(f"{output['ename']}({output['evalue']})")
+    return errors
 
 
 def get_images(ipynb):
@@ -352,4 +421,4 @@ def get_images(ipynb):
                 ...,
                 [ 14,  13,  19]]], dtype=uint8)
     """
-    pass
+    
