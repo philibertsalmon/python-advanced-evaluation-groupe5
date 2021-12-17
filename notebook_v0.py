@@ -392,11 +392,20 @@ def get_exceptions(ipynb):
         Warning('🌧️  light rain')
     """
     errors = []
+    # On crée une sous-classe de Exception afin de choisir la représentation de error qui nous arrange.
+    class MyError(Exception):
+        def __init__(self, ename, evalue):
+            self.ename = ename
+            self.evalue = evalue
+        
+        def __repr__(self):
+            return self.ename + "(" + repr(self.evalue) + ")"
+
     for cell in get_cells(ipynb):
         if cell['cell_type'] == 'code':
             for output in cell['outputs']:
                 if output['output_type'] == 'error':
-                    errors.append(f"{output['ename']}({output['evalue']})")
+                    errors.append(MyError(output['ename'],output['evalue']))
     return errors
 
 
@@ -421,4 +430,4 @@ def get_images(ipynb):
                 ...,
                 [ 14,  13,  19]]], dtype=uint8)
     """
-    
+    pass
