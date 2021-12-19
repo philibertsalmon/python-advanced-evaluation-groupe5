@@ -51,10 +51,9 @@ def load_ipynb(filename) -> dict:
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    f = open(filename)
-    data = json.load(f)
-    f.close()
-    return data
+    # On ouvre le fichier puis on le converit en dict python avec la fonction json.load()->dict
+    with open(filename) as f: 
+        return json.load(f)
 
 
 def save_ipynb(ipynb, filename):
@@ -77,9 +76,9 @@ def save_ipynb(ipynb, filename):
         True
 
     """
-    f = open(filename, 'a')
-    f.write(json.dumps(ipynb))
-    f.close()
+    # Mettre 'a' en argument de open() permet de créer un nouveau fichier, dans lequel on écrit le code au format JSON avec la fonction json.dumps().
+    with open(filename, 'a') as f:
+        f.write(json.dumps(ipynb))
 
 
 def get_format_version(ipynb):
@@ -96,6 +95,7 @@ def get_format_version(ipynb):
         >>> get_format_version(ipynb)
         '4.5'
     """
+    # La version et la sous-version sont stockées dans le dictionnaire ipynb représentant le notebook. Elles correspondent respectivement aux clefs 'nbformat' et 'nbformat_minor'.
     return f"{ipynb['nbformat']}.{ipynb['nbformat_minor']}"
 
 
@@ -120,6 +120,7 @@ def get_metadata(ipynb):
                            'pygments_lexer': 'ipython3',
                            'version': '3.9.7'}}
     """
+    # Les metdata sont stockées dans le dictionnaire représentant le Notebook. Elles correspondent à la clef 'metadata'.
     return ipynb['metadata']
 
 
@@ -154,6 +155,7 @@ def get_cells(ipynb):
           'metadata': {},
           'source': ['Goodbye! 👋']}]
     """
+    # Les cellules sont stockées dans le dictionnaire représentant le Notebook. Elles correspondent à la clef 'cells'. La fonction get_cells() renvoie une liste de cellules, donc une list de dict.
     return ipynb['cells']
 
 
@@ -181,22 +183,19 @@ def to_percent(ipynb):
         ...     with open(notebook_file.with_suffix(".py"), "w", encoding="utf-8") as output:
         ...         print(percent_code, file=output)
     """
+    # En lisant les notebooks donnés en exemple, on comprend les règles d'écritures que l'on reproduit.
     text = ""
     cells = get_cells(ipynb)
+    # On bâtit le texte cellule par cellule.
     for cell in cells:
-        cell_type = cell['cell_type']
-        if cell_type == 'markdown':
-            text += '# %% [markdown]\n'
-            for line in cell['source']:
-                text += '# '
-                text += line
-            text += '\n\n'
-        elif cell_type == 'code':
-            text += '# %%\n'
-            for line in cell['source']:
-                text += line
-            text += '\n\n'
-    return text[:-1]
+        cell_type = cell['cell_type'] # On cherche le type de la cellule...
+        markdown = cell_type == 'markdown' # ... que l'on stocke dans un booléen.
+        text += '# %% [markdown]\n' if markdown else '# %%\n' # Chaque cellule possède un début, selon son type.
+        for line in cell['source']: # Puis on construit ligne par ligne.
+            text += '# ' if markdown else '' # Début de la ligne suivant le type.
+            text += line # Ajout de la ligne
+        text += '\n\n' # Saut caractéristique de la fin de cellule.
+    return text[:-1] # On coupe le dernier saut de la dernière cellule : le code doit se terminer par un unique saut de ligne.
 
 
 def starboard_html(code):
@@ -253,38 +252,15 @@ def to_starboard(ipynb, html=False):
         ...     with open(notebook_file.with_suffix(".html"), "w", encoding="utf-8") as output:
         ...         print(starboard_html, file=output)
     """
-    if html:
-        text = ""
-        cells = get_cells(ipynb)
-        for cell in cells:
-            cell_type = cell['cell_type']
-            if cell_type == 'markdown':
-                text += '# %% [markdown]\n'
-                for line in cell['source']:
-                    text += line
-                text += '\n'
-            elif cell_type == 'code':
-                text += '# %% [python]\n'
-                for line in cell['source']:
-                    text += line
-                text += '\n'
-        return starboard_html(text[:-1])
-    else:
-        text = ""
-        cells = get_cells(ipynb)
-        for cell in cells:
-            cell_type = cell['cell_type']
-            if cell_type == 'markdown':
-                text += '# %% [markdown]\n'
-                for line in cell['source']:
-                    text += line
-                text += '\n'
-            elif cell_type == 'code':
-                text += '# %% [python]\n'
-                for line in cell['source']:
-                    text += line
-                text += '\n'
-        return text[:-1]
+    text = ""
+    cells = get_cells(ipynb)
+    for cell in cells:
+        ismarkdown = cell['cell_type'] == 'markdown'
+        text += '# %% [markdown]\n' if ismarkdown else '# %% [python]\n'
+        for line in cell["source"]:
+            text += line
+        text += '\n'
+    return starboard_html(text[:-1]) if html else text[:-1]
 
 # Outputs
 # ------------------------------------------------------------------------------

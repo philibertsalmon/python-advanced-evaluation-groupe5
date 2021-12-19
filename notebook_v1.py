@@ -2,12 +2,28 @@
 # -*- coding: utf-8 -*-
 
 import notebook_v0 as n0
+import json
 
 """
 an object-oriented version of the notebook toolbox
 """
 
-class CodeCell:
+class Cell:
+    r"""A Cell i a Jupyter notebook.
+
+    Args :
+        ipynb (dict): a dictionary representing the cell in a Jupyter Notebook.
+    
+    Attributes:
+        id (int): the cell's id.
+        source (list): the cell's source code, as a list of str.
+    """
+    def __init__(self, ipynb: dict):
+        self.id = ipynb["id"]
+        self.source = ipynb["source"]
+        
+
+class CodeCell(Cell):
     r"""A Cell of Python code in a Jupyter notebook.
 
     Args:
@@ -35,11 +51,10 @@ class CodeCell:
     """
 
     def __init__(self, ipynb):
-        self.id = ipynb['id']
-        self.source = ipynb['source']
+        super().__init__(ipynb)
         self.execution_count = ipynb['execution_count']
 
-class MarkdownCell:
+class MarkdownCell(Cell):
     r"""A Cell of Markdown markup in a Jupyter notebook.
 
     Args:
@@ -67,8 +82,7 @@ class MarkdownCell:
     """
 
     def __init__(self, ipynb):
-        self.id = ipynb['id']
-        self.source = ipynb['source']
+        super().__init__(ipynb)
 
 class Notebook:
     r"""A Jupyter Notebook.
@@ -98,7 +112,6 @@ class Notebook:
             >>> isinstance(nb.cells[0], Cell)
             True
     """
-    ##DEFINIR LE TYPE CELL
     def __init__(self, ipynb):
         self.version = n0.get_format_version(ipynb)
         self.cells = [MarkdownCell(cell) if cell['cell_type'] == 'markdown' else CodeCell(cell) for cell in n0.get_cells(ipynb)]
@@ -150,13 +163,41 @@ class PyPercentSerializer:
             # %% [markdown]
             # Goodbye! 👋
     """
-    def __init__(self, notebook):
-        pass
+    def __init__(self, notebook: Notebook):
+        self.notebook = notebook
 
     def to_py_percent(self):
         r"""Converts the notebook to a string in py-percent format.
         """
-        pass
+        # On va se servir de n0.to_percent(ipynb:dict). Il faut donc convertir le Notebook en dict.
+        # Pour récupérer la version et la sous-version on parcourt la string self.notebook.version jusqu'au point.
+        length_of_version = 1
+        caracter = self.notebook.version[0]
+        while caracter != '.':
+            caracter = self.notebook.version[length_of_version]
+            length_of_version += 1
+        version = self.notebook.version[:length_of_version-1]
+        version_minor = self.notebook.version[length_of_version:]
+        # Puis, on crée le squelette vide du dict.
+        ipynb ={
+            "cells" : [],
+            "metadata" : {},
+            "nbformat" : version,
+            "nbformat_minor" : version_minor
+            }
+        # Enfin, on parcourt les cellues du Notebook pour remplir cells.
+        for cell_nb in self.notebook:
+            cell_dict = {
+                "cell_type" : "markdown" if isinstance(cell_nb, MarkdownCell) else "code",
+                "id" : cell_nb.id,
+                "metadata" : {},
+                "source" : cell_nb.id
+            }
+            if isinstance(cell_nb, CodeCell):
+                cell_dict["outputs"] = []
+                cell_dict["execution_count"] = []
+        ipynb["cells"] += cell_dict 
+        return n0.to_percent(ipynb)
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -171,6 +212,7 @@ class PyPercentSerializer:
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
         pass
+
 class Serializer:
     r"""Serializes a Jupyter Notebook to a file.
 
@@ -205,7 +247,7 @@ class Serializer:
     """
 
     def __init__(self, notebook):
-        pass
+        self.notebook = notebook
 
     def serialize(self):
         r"""Serializes the notebook to a JSON object

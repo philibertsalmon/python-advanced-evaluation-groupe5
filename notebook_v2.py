@@ -5,7 +5,23 @@
 an object-oriented version of the notebook toolbox
 """
 
-class CodeCell:
+import notebook_v0 as n0
+
+class Cell():
+    r"""A Cell in a Jupyter notebbok.
+
+    Args :
+    id (str): The unique ID of the cell.
+    source (list): The source code of the cell, as a list of str.
+    """
+
+    def __init__(self, id, source):
+        self.id = id
+        self.source = source
+
+# On crée les classes CodeCell et MarkdownCell comme des sous-classes de Cell
+
+class CodeCell(Cell):
     r"""A Cell of Python code in a Jupyter notebook.
 
     Args:
@@ -30,9 +46,10 @@ class CodeCell:
         ['print("Hello world!")']
     """
     def __init__(self, id, source, execution_count):
-        pass
+        super().__init__(id, source) # On intialise avec la super-classe...
+        self.execution_count = execution_count #... et on complète par l'info spécifique à une cellule de code.
 
-class MarkdownCell:
+class MarkdownCell(Cell):
     r"""A Cell of Markdown markup in a Jupyter notebook.
 
     Args:
@@ -56,7 +73,7 @@ class MarkdownCell:
         ['Hello world!', '============', 'Print `Hello world!`:']
     """
     def __init__(self, id, source):
-        super().__init__(id, source)
+        super().__init__(id, source) # Idem : on initialise avec la super-classe.
 
 class Notebook:
     r"""A Jupyter Notebook
@@ -91,13 +108,14 @@ class Notebook:
         True
     """
 
-    def __init__(self, version, cells):
-        pass
+    def __init__(self, version: str, cells: list): # cells est une list de Cells
+        self.version = version
+        self.cells = cells
     
     def __iter__(self):
         r"""Iterate the cells of the notebook.
         """
-        pass
+        return iter(self.cells)
 
 class NotebookLoader:
     r"""Loads a Jupyter Notebook from a file
@@ -116,13 +134,21 @@ class NotebookLoader:
             b777420a
             a23ab5ac
     """
-    def __init__(self, filename):
-        pass
+    def __init__(self, filename: str):
+        self.filename = filename
 
     def load(self):
         r"""Loads a Notebook instance from the file.
         """
-        pass
+        # Il faut construire un Notebook. On doit récupérer les deux argument suivants :
+        # 1 : la version
+        ipynb = n0.load_ipynb(self.filename)
+        nb_version = n0.get_format_version(ipynb) #où l'on se ressert de fonctions développées dans le notebook 0.
+        # 2 : la list cells des Cells du futur Notebook.
+        # On construit donc une à une les Cell en parcourant la liste fournie par la fonction n0.get_cells.
+        # Cela revient à convertir les cellules du format dict au format Cell.
+        nb_cells = [CodeCell(cell["id"], cell["source"], cell["execution_count"]) if cell["cell_type"] == "code" else MarkdownCell(cell["id"], cell["source"]) for cell in n0.get_cells(ipynb)]
+        return Notebook(nb_version, nb_cells)
 
 class Markdownizer:
     r"""Transforms a notebook to a pure markdown notebook.
@@ -147,12 +173,23 @@ class Markdownizer:
     """
 
     def __init__(self, notebook):
-        pass
+        self.notebook = notebook
 
     def markdownize(self):
         r"""Transforms the notebook to a pure markdown notebook.
         """
-        pass
+        # On va parcourir les cellules du notebook et changer celles du type CodeCell en MarkdownCell
+        new_cells = []
+        for cell in self.notebook:
+            if isinstance(cell, CodeCell):
+                # Il faut encadrer le texte source :
+                new_source = ["```python\n"] + cell.source + ["\n```"]
+                new_cell = MarkdownCell(cell.id, new_source)
+            else:
+                # Sinon, on ne change rien
+                new_cell = cell
+            new_cells.append(new_cell)
+        return Notebook(self.notebook.version, new_cells)
 
 class MarkdownLesser:
     r"""Removes markdown cells from a notebook.
@@ -170,7 +207,7 @@ class MarkdownLesser:
                 | print("Hello world!")
     """
     def __init__(self, notebook):
-        pass
+        self.notebook = notebook
 
     def remove_markdown_cells(self):
         r"""Removes markdown cells from the notebook.
@@ -178,7 +215,13 @@ class MarkdownLesser:
         Returns:
             Notebook: a Notebook instance with only code cells
         """
-        pass
+        # On procède de la même manière que pour Mardownizer
+        new_cells = []
+        for cell in self.notebook:
+            if not isinstance(cell, MarkdownCell):
+                new_cells.append(cell)
+        return Notebook(self.notebook.version, new_cells)
+
 
 class PyPercentLoader:
     r"""Loads a Jupyter Notebook from a py-percent file.
@@ -204,7 +247,8 @@ class PyPercentLoader:
     """
 
     def __init__(self, filename, version="4.5"):
-        pass
+        self.filename = filename
+        self.version = version
 
     def load(self):
         r"""Loads a Notebook instance from the py-percent file.
