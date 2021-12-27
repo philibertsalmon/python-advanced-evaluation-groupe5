@@ -35,12 +35,12 @@ class Question9(unittest.TestCase):
              markdown_cell.source)
 
     def test_build_notebook_minimal(self):
-        ipynb = toolbox.load_ipynb("samples/minimal.ipynb")
+        ipynb = n0.load_ipynb("samples/minimal.ipynb")
         nb = Notebook(ipynb)
         self.assertEqual("4.5", nb.version)
 
     def test_build_notebook_hello_world(self):
-        ipynb = toolbox.load_ipynb("samples/hello-world.ipynb")
+        ipynb = n0.load_ipynb("samples/hello-world.ipynb")
         nb = Notebook(ipynb)
         self.assertIsInstance(nb.cells, list)
         self.assertIsInstance(nb.cells[0], Cell)

@@ -23,7 +23,7 @@ class Cell:
         self.source = ipynb["source"]
         
 
-class CodeCell(Cell):
+class CodeCell(Cell): 
     r"""A Cell of Python code in a Jupyter notebook.
 
     Args:
@@ -169,35 +169,8 @@ class PyPercentSerializer:
     def to_py_percent(self):
         r"""Converts the notebook to a string in py-percent format.
         """
-        # On va se servir de n0.to_percent(ipynb:dict). Il faut donc convertir le Notebook en dict.
-        # Pour récupérer la version et la sous-version on parcourt la string self.notebook.version jusqu'au point.
-        length_of_version = 1
-        caracter = self.notebook.version[0]
-        while caracter != '.':
-            caracter = self.notebook.version[length_of_version]
-            length_of_version += 1
-        version = self.notebook.version[:length_of_version-1]
-        version_minor = self.notebook.version[length_of_version:]
-        # Puis, on crée le squelette vide du dict.
-        ipynb ={
-            "cells" : [],
-            "metadata" : {},
-            "nbformat" : version,
-            "nbformat_minor" : version_minor
-            }
-        # Enfin, on parcourt les cellues du Notebook pour remplir cells.
-        for cell_nb in self.notebook:
-            cell_dict = {
-                "cell_type" : "markdown" if isinstance(cell_nb, MarkdownCell) else "code",
-                "id" : cell_nb.id,
-                "metadata" : {},
-                "source" : cell_nb.id
-            }
-            if isinstance(cell_nb, CodeCell):
-                cell_dict["outputs"] = []
-                cell_dict["execution_count"] = []
-        ipynb["cells"] += cell_dict 
-        return n0.to_percent(ipynb)
+        return n0.to_percent(self.notebook)
+
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -211,7 +184,8 @@ class PyPercentSerializer:
                 >>> s = PyPercentSerializer(nb)
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
-        pass
+        with open(filename, 'a') as f:
+            f.write(self.to_py_percent)
 
 class Serializer:
     r"""Serializes a Jupyter Notebook to a file.
@@ -246,7 +220,7 @@ class Serializer:
         >>> s.to_file("samples/hello-world-serialized.ipynb")
     """
 
-    def __init__(self, notebook):
+    def __init__(self, notebook: Notebook):
         self.notebook = notebook
 
     def serialize(self):
@@ -255,7 +229,24 @@ class Serializer:
         Returns:
             dict: a dictionary representing the notebook.
         """
-        pass
+        ipynb = {
+            'cells': [],
+            'metadata' : {},
+            'nbformat' : None,
+            'nbformat_minor' : None}
+        for cell in self.notebook:
+            cell_notebook = {}
+            cell_notebook['cell_type'] = 'code' if isinstance(cell, CodeCell) else 'markdown'
+            if isinstance(cell, CodeCell):
+                cell_notebook['execution_count'] = cell.execution_count
+            cell_notebook['id'] = cell.id
+            cell_notebook['metadata'] = {}
+            cell_notebook['source'] = cell.source
+            ipynb['cells'].append(cell_notebook)
+        version = self.notebook.version.split('.')
+        ipynb['nbformat'] = int(version[0])
+        ipynb['nbformat_minor'] = int(version[1])
+        return ipynb
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -275,7 +266,8 @@ class Serializer:
                 b777420a
                 a23ab5ac
         """
-        pass
+        with open(filename, 'a') as f:
+            f.write(self.serialize)
 
 class Outliner:
     r"""Quickly outlines the strucure of the notebook in a readable format.
@@ -298,7 +290,7 @@ class Outliner:
                 └─▶ Markdown cell #a23ab5ac
                     | Goodbye! 👋
     """
-    def __init__(self, notebook):
+    def __init__(self, notebook: Notebook):
         self.notebook = notebook
 
     def outline(self):
@@ -307,4 +299,16 @@ class Outliner:
         Returns:
             str: a string representing the outline of the notebook.
         """
-        pass
+        text = f"Jupyter Notebook v{self.notebook.version}"
+        for cell in self.notebook:
+            text += "\n└─▶ "
+            text += f"Markdown cell #{cell.id}\n" if isinstance(cell, MarkdownCell) else f"Code cell #{cell.id} ({cell.execution_count})\n"
+            if len(cell.source) == 1:
+                text += f"    | {cell.source[0]}"
+            else :
+                text += f"    ┌  {cell.source[0]}"
+                for middle_line in cell.source[1:-1]:
+                    text += f"    │  {middle_line}"
+                text += f"    └  {cell.source[-1]}"
+        return text
+        

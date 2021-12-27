@@ -250,7 +250,23 @@ class PyPercentLoader:
         self.filename = filename
         self.version = version
 
-    def load(self):
+    def load(self) -> Notebook:
         r"""Loads a Notebook instance from the py-percent file.
         """
+        with open(self.filename) as f:
+            nb_py = f.read()
+        nb_lines = nb_py.split('\n')
+        cells = []
+        cell = []
+        for line in nb_lines:
+            if line == '# [markdown]\n':
+                cells.append(MarkdownCell(id, cell))
+                cell = []
+            elif line == '# [code]\n':
+               cells.append(CodeCell(id, cell, execution_count))
+                cell = []
+                ismarkdown = False
+            else :
+                cell.append(line)
+        return Notebook(self.version, cells)
         pass
