@@ -406,4 +406,18 @@ def get_images(ipynb):
                 ...,
                 [ 14,  13,  19]]], dtype=uint8)
     """
-    pass
+    # La donnée des images est stockées dans la cellule qui affiche l'image, dans "outputs" puis "data" puis "image/png". Elle est encodée en hexadécimal. Il s'agit donc de récupérer cette `string` en hexadécimal et de la convertir. On se sert du module PIL et du module base64.
+    images = []
+    for cell in get_cells(ipynb):
+        if cell["cell_type"] == "code" :
+            for output in cell["outputs"]:
+                if "image/png" in output["data"]:
+                    imagestr = output["data"]["image/png"]
+                    textplain = output["data"]["text/plain"][0].split(" ")
+                    for word in textplain:
+                        if "size=" in word:
+                            (width, height) = word[5:].split("x")[0], word[5:].split("x")[1]
+                    image_PIL = PIL.Image.open(io.BytesIO(base64.b64decode(imagestr)))
+                    image_array = np.array(image_PIL, dtype=np.uint8)
+                    images.append(image_array)
+    return images
