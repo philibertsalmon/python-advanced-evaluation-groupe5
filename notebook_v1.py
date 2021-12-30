@@ -18,6 +18,7 @@ class Cell:
         id (int): the cell's id.
         source (list): the cell's source code, as a list of str.
     """
+    # On suit les exigences de la docstring.
     def __init__(self, ipynb: dict):
         self.id = ipynb["id"]
         self.source = ipynb["source"]
@@ -50,9 +51,10 @@ class CodeCell(Cell):
         ['print("Hello world!")']
     """
 
-    def __init__(self, ipynb):
-        super().__init__(ipynb)
-        self.execution_count = ipynb['execution_count']
+    # `CodeCell` (et identiquement `MarkdownCell` ci-dessous) est developpée comme une sous classe de `Cell`.
+    def __init__(self, ipynb: dict):
+        super().__init__(ipynb) # On initinialise grâce à la super-classe.
+        self.execution_count = ipynb['execution_count'] # Reste à rajouter la spécificité d'une cellule de code.
 
 class MarkdownCell(Cell):
     r"""A Cell of Markdown markup in a Jupyter notebook.
@@ -81,7 +83,8 @@ class MarkdownCell(Cell):
         ['Hello world!\n', '============\n', 'Print `Hello world!`:']
     """
 
-    def __init__(self, ipynb):
+    # Idem que pour `CodeCell`.
+    def __init__(self, ipynb: dict):
         super().__init__(ipynb)
 
 class Notebook:
@@ -112,9 +115,10 @@ class Notebook:
             >>> isinstance(nb.cells[0], Cell)
             True
     """
-    def __init__(self, ipynb):
-        self.version = n0.get_format_version(ipynb)
+    def __init__(self, ipynb: dict):
+        self.version = n0.get_format_version(ipynb) # On récupère la version à partir du `dict`, grâce à la fonction développée dans le notebook v0.
         self.cells = [MarkdownCell(cell) if cell['cell_type'] == 'markdown' else CodeCell(cell) for cell in n0.get_cells(ipynb)]
+        # Il s'agit ici de créer une `list` de `Cell`.
 
     @staticmethod
     def from_file(filename):
@@ -126,6 +130,7 @@ class Notebook:
             >>> nb.version
             '4.5'
         """
+        # On s'appuie sur une fonction développée dans le notebook v0, qui renvoie le dictionnaire ipynb d'un notebook, à partir du nom du fichier.
         return Notebook(n0.load_ipynb(filename))
 
     def __iter__(self):
@@ -140,6 +145,7 @@ class Notebook:
             b777420a
             a23ab5ac
         """
+        # On itère les cellules.
         return iter(self.cells)
 
 class PyPercentSerializer:
@@ -166,20 +172,21 @@ class PyPercentSerializer:
     def __init__(self, notebook: Notebook):
         self.notebook = notebook
 
-    def to_py_percent(self):
+    def to_py_percent(self) -> str:
         r"""Converts the notebook to a string in py-percent format.
         """
+        # L'idée de cette fonction est la même que celle du notebook v0. La différence réside dans le fait qu'on ne va pas chercher les informations au même endroit.
         text = ""
         for cell in self.notebook:
-            if isinstance(cell, MarkdownCell):
+            if isinstance(cell, MarkdownCell): # Le type de cellule (code ou markdown) n'est plus dans le dictionnaire `ipynb`, mais est contenu dans le `type` de la cellule.
                 text += "# %% [markdown]\n# "
-                text += '# '.join(cell.source)
+                text += '# '.join(cell.source) # Le contenu de la cellule n'est plus non plus dans le dictionnaire, mais en argument de la `cell:Cell`.
                 text += "\n\n"
             if isinstance(cell, CodeCell):
                 text += "# %%\n"
-                text += ''.join(cell.source)
+                text += ''.join(cell.source) 
                 text += "\n\n"
-        return text[:-2]
+        return text[:-2] # On supprime les deux derniers sauts de ligne pour satisfaire la convention.
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -193,6 +200,7 @@ class PyPercentSerializer:
                 >>> s = PyPercentSerializer(nb)
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
+        # Il s'agit de l'écriture classique d'un fichier.
         with open(filename, 'a') as f:
             f.write(self.to_py_percent())
 
@@ -232,26 +240,29 @@ class Serializer:
     def __init__(self, notebook: Notebook):
         self.notebook = notebook
 
-    def serialize(self):
+    def serialize(self) -> dict:
         r"""Serializes the notebook to a JSON object
 
         Returns:
             dict: a dictionary representing the notebook.
         """
+        # Créons un squelette de JSON vide.
         ipynb = {
             'cells': [],
             'metadata' : {},
             'nbformat' : None,
             'nbformat_minor' : None}
+        # Remplissons la clef `cells` en parcourant les `Cells` du `Notebook`.
         for cell in self.notebook:
-            cell_notebook = {}
-            cell_notebook['cell_type'] = 'code' if isinstance(cell, CodeCell) else 'markdown'
+            cell_notebook = {} # Cellule vide à ajouter.
+            cell_notebook['cell_type'] = 'code' if isinstance(cell, CodeCell) else 'markdown' # On récupère le type de la cellule.
             if isinstance(cell, CodeCell):
-                cell_notebook['execution_count'] = cell.execution_count
-            cell_notebook['id'] = cell.id
-            cell_notebook['metadata'] = {}
-            cell_notebook['source'] = cell.source
-            ipynb['cells'].append(cell_notebook)
+                cell_notebook['execution_count'] = cell.execution_count # On rajoute la spécificité des cellules de code.
+            cell_notebook['id'] = cell.id # Puis l'indice, stocké comme argument de la `Cell`.
+            cell_notebook['metadata'] = {} # On ajoute des metadata vides.
+            cell_notebook['source'] = cell.source # On récupère la source, stockée en argument.
+            ipynb['cells'].append(cell_notebook) # Puis on ajoute la cellule à la liste de cellules.
+        # Reste à récupérer les versions.
         version = self.notebook.version.split('.')
         ipynb['nbformat'] = int(version[0])
         ipynb['nbformat_minor'] = int(version[1])
@@ -302,16 +313,18 @@ class Outliner:
     def __init__(self, notebook: Notebook):
         self.notebook = notebook
 
-    def outline(self):
+    def outline(self) -> str:
         r"""Outlines the notebook in a readable format.
 
         Returns:
             str: a string representing the outline of the notebook.
         """
-        text = f"Jupyter Notebook v{self.notebook.version}"
-        for cell in self.notebook:
-            text += "\n└─▶ "
-            text += f"Markdown cell #{cell.id}\n" if isinstance(cell, MarkdownCell) else f"Code cell #{cell.id} ({cell.execution_count})\n"
+        # Comme pour les autres fonctions similaires développées plus haut, on construit pas à pas la chaîne de caractères, en suivant l'exemple.
+        text = f"Jupyter Notebook v{self.notebook.version}" # Début
+        for cell in self.notebook: # On construit cellule par cellule.
+            text += "\n└─▶ " # Début de cellule
+            text += f"Markdown cell #{cell.id}\n" if isinstance(cell, MarkdownCell) else f"Code cell #{cell.id} ({cell.execution_count})\n" # Début  de la cellule, selon le type.
+            # On doit ajouter les signes |, ┌ et └. Pour cela, il faut discriminer les cellule selon leur longueur.
             if len(cell.source) == 1:
                 text += f"    | {cell.source[0]}"
             else :

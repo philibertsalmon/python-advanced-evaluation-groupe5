@@ -5,6 +5,7 @@
 an object-oriented version of the notebook toolbox
 """
 
+from typing import NoReturn
 import notebook_v0 as n0
 import notebook_v1 as n1
 
@@ -138,7 +139,7 @@ class NotebookLoader:
     def __init__(self, filename: str):
         self.filename = filename
 
-    def load(self):
+    def load(self) -> Notebook:
         r"""Loads a Notebook instance from the file.
         """
         # Il faut construire un Notebook. On doit récupérer les deux argument suivants :
@@ -176,14 +177,14 @@ class Markdownizer:
     def __init__(self, notebook):
         self.notebook = notebook
 
-    def markdownize(self):
+    def markdownize(self) -> Notebook:
         r"""Transforms the notebook to a pure markdown notebook.
         """
-        # On va parcourir les cellules du notebook et changer celles du type CodeCell en MarkdownCell
+        # On va parcourir les cellules du notebook et changer celles du type CodeCell en MarkdownCell.
         new_cells = []
         for cell in self.notebook:
             if isinstance(cell, CodeCell):
-                # Il faut encadrer le texte source :
+                # Il faut encadrer le texte source, si la cellule est du code:
                 new_source = ["```python\n"] + cell.source + ["\n```"]
                 new_cell = MarkdownCell(cell.id, new_source)
             else:
@@ -210,13 +211,13 @@ class MarkdownLesser:
     def __init__(self, notebook):
         self.notebook = notebook
 
-    def remove_markdown_cells(self):
+    def remove_markdown_cells(self) -> Notebook:
         r"""Removes markdown cells from the notebook.
 
         Returns:
             Notebook: a Notebook instance with only code cells
         """
-        # On procède de la même manière que pour Mardownizer
+        # On procède de la même manière que pour Mardownizer.
         new_cells = []
         for cell in self.notebook:
             if not isinstance(cell, MarkdownCell):
@@ -247,7 +248,7 @@ class PyPercentLoader:
             a23ab5ac
     """
 
-    def __init__(self, filename, version="4.5"):
+    def __init__(self, filename: str, version="4.5"):
         self.filename = filename
         self.version = version
 
@@ -255,19 +256,25 @@ class PyPercentLoader:
         r"""Loads a Notebook instance from the py-percent file.
         """
         with open(self.filename) as f:
-            nb_py = f.read()
-        nb_lines = nb_py.split('\n')
+            nb_py = f.read() # On lit le fichier au format py-percent, et on stocke la string correspondante.
+
+        nb_lines = nb_py.split('\n') # On sépare les lignes, pour obtenir une liste de lignes.
+
         cells = []
+
+        # On va créer une cellule, qu'on va remplir successivement ligne après ligne, jusqu'à rencontrer le début d'une cellule suivante.
         cell_source = []
-        execution_count = 0
+        execution_count = 0 # Il s'agit d'un conteur qu'on va augmenter à chaque ajout de cellule.
+
         for line in nb_lines:
-            if line == '# [markdown]\n':
-                cells.append(MarkdownCell(0, cell_source))
-                cell_source = []
-            elif line == '# [code]\n':
-                cells.append(CodeCell(0, cell_source, execution_count))
+            if line == '# [markdown]\n': # Ici, on rencontre le début d'une nouvelle cellule.
+                cells.append(MarkdownCell(0, cell_source)) # On ajoute la cellule qui vient de se terminer à la liste de cellule.
+                cell_source = [] # Puis, on la réinitialise.
+                execution_count += 1 # Et on incrémente le compteur d'execution.
+            elif line == '# [code]\n': # Et là, le début d'une cellule de code.
+                cells.append(CodeCell(0, cell_source, execution_count)) 
                 execution_count += 1
                 cell_source = []
             else :
-                cell_source.append(line + '\n')
-        return Notebook(self.version, cells)
+                cell_source.append(line + '\n') # Si on ne rencontre pas le début d'une nouvelle cellule, on ajoute son contenu à la cellule en cours de remplissage.
+        return Notebook(self.version, cells) # On renvoie le Notebook.

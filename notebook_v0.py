@@ -17,7 +17,7 @@ import numpy as np
 import PIL.Image  # pillow
 
 
-def load_ipynb(filename) -> dict:
+def load_ipynb(filename: str) -> dict:
     r"""
     Load a jupyter notebook .ipynb file (JSON) as a Python dict.
 
@@ -51,12 +51,12 @@ def load_ipynb(filename) -> dict:
          'nbformat': 4,
          'nbformat_minor': 5}
     """
-    # On ouvre le fichier puis on le converit en dict python avec la fonction json.load()->dict
+    # On ouvre le fichier puis on le convertit en dict python avec la fonction json.load()->dict
     with open(filename) as f: 
         return json.load(f)
 
 
-def save_ipynb(ipynb, filename):
+def save_ipynb(ipynb, filename: str):
     r"""
     Save a jupyter notebook (Python dict) as a .ipynb file (JSON)
 
@@ -81,7 +81,7 @@ def save_ipynb(ipynb, filename):
         f.write(json.dumps(ipynb))
 
 
-def get_format_version(ipynb):
+def get_format_version(ipynb: dict) -> str:
     r"""
     Return the format version (str) of a jupyter notebook (dict).
 
@@ -95,11 +95,11 @@ def get_format_version(ipynb):
         >>> get_format_version(ipynb)
         '4.5'
     """
-    # La version et la sous-version sont stockées dans le dictionnaire ipynb représentant le notebook. Elles correspondent respectivement aux clefs 'nbformat' et 'nbformat_minor'.
+    # La version et la sous-version sont stockées dans le dictionnaire `ipynb` représentant le notebook. Elles correspondent respectivement aux clefs 'nbformat' et 'nbformat_minor'.
     return f"{ipynb['nbformat']}.{ipynb['nbformat_minor']}"
 
 
-def get_metadata(ipynb):
+def get_metadata(ipynb: dict) -> dict:
     r"""
     Return the global metadata of a notebook.
 
@@ -120,11 +120,11 @@ def get_metadata(ipynb):
                            'pygments_lexer': 'ipython3',
                            'version': '3.9.7'}}
     """
-    # Les metdata sont stockées dans le dictionnaire représentant le Notebook. Elles correspondent à la clef 'metadata'.
+    # Les metdata sont stockées dans le dictionnaire représentant le notebook. Elles correspondent à la clef 'metadata'.
     return ipynb['metadata']
 
 
-def get_cells(ipynb):
+def get_cells(ipynb: dict) -> list:
     r"""
     Return the notebook cells.
 
@@ -155,11 +155,11 @@ def get_cells(ipynb):
           'metadata': {},
           'source': ['Goodbye! 👋']}]
     """
-    # Les cellules sont stockées dans le dictionnaire représentant le Notebook. Elles correspondent à la clef 'cells'. La fonction get_cells() renvoie une liste de cellules, donc une list de dict.
+    # Les cellules sont stockées dans le dictionnaire représentant le notebook. Elles correspondent à la clef `cells`. La fonction `get_cells()` renvoie une liste de cellules, donc une `list` de `dict`.
     return ipynb['cells']
 
 
-def to_percent(ipynb):
+def to_percent(ipynb: dict) -> str:
     r"""
     Convert a ipynb notebook (dict) to a Python code in the percent format (str).
 
@@ -183,18 +183,18 @@ def to_percent(ipynb):
         ...     with open(notebook_file.with_suffix(".py"), "w", encoding="utf-8") as output:
         ...         print(percent_code, file=output)
     """
-    # En lisant les notebooks donnés en exemple, on comprend les règles d'écritures que l'on reproduit.
+    # En lisant les notebooks donnés en exemple, on comprend les règles d'écriture, que l'on reproduit  ici.
     text = ""
     cells = get_cells(ipynb)
-    # On bâtit le texte cellule par cellule.
+    # On bâtit le texte cellule par cellule. On le stocke dans `text`.
     for cell in cells:
         cell_type = cell['cell_type'] # On cherche le type de la cellule...
         markdown = cell_type == 'markdown' # ... que l'on stocke dans un booléen.
         text += '# %% [markdown]\n' if markdown else '# %%\n' # Chaque cellule possède un début, selon son type.
-        for line in cell['source']: # Puis on construit ligne par ligne.
+        for line in cell['source']: # Puis on construit ligne par ligne, l'information étant stockée à la clef `source`.
             text += '# ' if markdown else '' # Début de la ligne suivant le type.
-            text += line # Ajout de la ligne
-        text += '\n\n' # Saut caractéristique de la fin de cellule.
+            text += line # Ajout de la ligne.
+        text += '\n\n' # Saut de ligne, caractéristique de la fin de cellule.
     return text[:-1] # On coupe le dernier saut de la dernière cellule : le code doit se terminer par un unique saut de ligne.
 
 
@@ -220,7 +220,7 @@ def starboard_html(code):
 """
 
 
-def to_starboard(ipynb, html=False):
+def to_starboard(ipynb: dict, html=False):
     r"""
     Convert a ipynb notebook (dict) to a Starboard notebook (str)
     or to a Starboard HTML document (str) if html is True.
@@ -252,6 +252,8 @@ def to_starboard(ipynb, html=False):
         ...     with open(notebook_file.with_suffix(".html"), "w", encoding="utf-8") as output:
         ...         print(starboard_html, file=output)
     """
+    # D'après les indications, on comprend sur un exemple la structure du texte à implémenter dans le format demandé.
+    # La démarche est sensiblement la même que dans la fonction `to_percent`, à des détails de mise en forme (retour à la ligne, début de cellule, début de ligne...) près. On ne précisera pas dans le détail la démarche, qui reste quasiment identique.
     text = ""
     cells = get_cells(ipynb)
     for cell in cells:
@@ -264,7 +266,7 @@ def to_starboard(ipynb, html=False):
 
 # Outputs
 # ------------------------------------------------------------------------------
-def clear_outputs(ipynb):
+def clear_outputs(ipynb: dict):
     r"""
     Remove the notebook cell outputs and resets the cells execution counts.
 
@@ -315,13 +317,14 @@ def clear_outputs(ipynb):
          'nbformat': 4,
          'nbformat_minor': 5}
     """
+    # On va chercher, dans les `dict` représentant les cellules, les clefs `execution_count` et `output`, que l'on réinitialise.
     for cell in ipynb['cells']:
         if cell['cell_type'] == 'code':
             cell['execution_count'] = None
             cell['outputs'] = []
 
 
-def get_stream(ipynb, stdout=True, stderr=False):
+def get_stream(ipynb: dict, stdout=True, stderr=False) -> str:
     r"""
     Return the text written to the standard output and/or error stream.
 
@@ -336,19 +339,20 @@ def get_stream(ipynb, stdout=True, stderr=False):
         👋 Hello world! 🌍
         🔥 This is fine. 🔥 (https://gunshowcomic.com/648)
     """
+    # On parcourt les cellules à la recherche des différentes `outputs`.
     text = ""
     for cell in get_cells(ipynb):
-        if cell['cell_type'] == 'code':
+        if cell['cell_type'] == 'code': # Les outputs ne sont présentes que dans des cellules de code.
             for output in cell['outputs']:
-                if stdout and output['name'] == 'stdout':
+                if stdout and output['name'] == 'stdout': # Ces deux tests (1) selectionnent le genre d'output voulu.
                     text += ''.join(output['text'])
-                elif stderr and output['name'] == 'stderr':
+                elif stderr and output['name'] == 'stderr': # (2)
                     text += ''.join(output['text'])
     return text
             
 
 
-def get_exceptions(ipynb):
+def get_exceptions(ipynb: dict) -> list:
     r"""
     Return all exceptions raised during cell executions.
 
@@ -368,24 +372,25 @@ def get_exceptions(ipynb):
         Warning('🌧️  light rain')
     """
     errors = []
-    # On crée une sous-classe de Exception afin de choisir la représentation de error qui nous arrange.
+    # On crée une sous-classe de `Exception` afin de pouvoir choisir par la suite la représentation de `error` qui nous arrange.
     class MyError(Exception):
         def __init__(self, ename, evalue):
             self.ename = ename
             self.evalue = evalue
         
         def __repr__(self):
-            return self.ename + "(" + repr(self.evalue) + ")"
+            return self.ename + "(" + repr(self.evalue) + ")" # On implémente ici la représentation exigée par l'énoncé.
 
+    # Parcourons désormais les cellules à la recherche des erreurs.
     for cell in get_cells(ipynb):
-        if cell['cell_type'] == 'code':
+        if cell['cell_type'] == 'code': # Les erreurs ne concernent que les cellules de code.
             for output in cell['outputs']:
-                if output['output_type'] == 'error':
-                    errors.append(MyError(output['ename'],output['evalue']))
+                if output['output_type'] == 'error': # Les erreurs sont un type d'output.
+                    errors.append(MyError(output['ename'], output['evalue'])) # Notre programme doit renvoyer une `list` de `Exception`. Passer par la sous-classse `MyError` permet de choisir la représentation.
     return errors
 
 
-def get_images(ipynb):
+def get_images(ipynb: dict) -> list:
     r"""
     Return the PNG images contained in a notebook cells outputs
     (as a list of NumPy arrays).
@@ -406,18 +411,15 @@ def get_images(ipynb):
                 ...,
                 [ 14,  13,  19]]], dtype=uint8)
     """
-    # La donnée des images est stockées dans la cellule qui affiche l'image, dans "outputs" puis "data" puis "image/png". Elle est encodée en hexadécimal. Il s'agit donc de récupérer cette `string` en hexadécimal et de la convertir. On se sert du module PIL et du module base64.
+    # La donnée des images est stockées dans la cellule qui affiche l'image, dans "outputs" puis "data" puis "image/png". Elle est encodée en hexadécimal. Il s'agit donc de récupérer cette `string` d'hexadécimal et de la convertir. On se sert du module base64.
     images = []
     for cell in get_cells(ipynb):
         if cell["cell_type"] == "code" :
             for output in cell["outputs"]:
                 if "image/png" in output["data"]:
-                    imagestr = output["data"]["image/png"]
-                    textplain = output["data"]["text/plain"][0].split(" ")
-                    for word in textplain:
-                        if "size=" in word:
-                            (width, height) = word[5:].split("x")[0], word[5:].split("x")[1]
-                    image_PIL = PIL.Image.open(io.BytesIO(base64.b64decode(imagestr)))
-                    image_array = np.array(image_PIL, dtype=np.uint8)
-                    images.append(image_array)
+                    # On a trouvé un image.
+                    imagestr = output["data"]["image/png"] # On la sauvegarde au format héxadécimal.
+                    image_PIL = PIL.Image.open(io.BytesIO(base64.b64decode(imagestr))) # Puis on crée l'image, avec le module PIL, en prenant soin de décoder l'hexadécimal (par le module base64).
+                    image_array = np.array(image_PIL, dtype=np.uint8) # On convertit notre PIL en array numpy.
+                    images.append(image_array) # Finalement on ajoute notre array à la liste.
     return images
