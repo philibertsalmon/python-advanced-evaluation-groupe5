@@ -68,7 +68,7 @@ class Question18(unittest.TestCase):
 class Question19(unittest.TestCase):
     def test_py_percent_loader(self):
         nb = NotebookLoader("samples/hello-world.ipynb").load()
-        PyPercentSerializer(nb).to_file("samples/hello-world-py-percent.py")
+        n1.PyPercentSerializer(nb).to_file("samples/hello-world-py-percent.py")
         nb2 = PyPercentLoader("samples/hello-world-py-percent.py").load()
         self.assertEqual("4.5", nb2.version)
         self.assertEqual("a9541506", nb.cells[0].id)

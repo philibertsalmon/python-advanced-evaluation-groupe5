@@ -6,6 +6,7 @@ an object-oriented version of the notebook toolbox
 """
 
 import notebook_v0 as n0
+import notebook_v1 as n1
 
 class Cell():
     r"""A Cell in a Jupyter notebbok.
@@ -236,7 +237,7 @@ class PyPercentLoader:
             >>> nb = NotebookLoader("samples/hello-world.ipynb").load()
             >>> PyPercentSerializer(nb).to_file("samples/hello-world-py-percent.py")
             >>> # Step 2 - Load the py-percent file
-            >>> nb2 = PyPercentLoader("samples/hello-world-py-percent.py").load()
+            >>> nb2 = n1.PyPercentLoader("samples/hello-world-py-percent.py").load()
             >>> nb.version
             '4.5'
             >>> for cell in nb:
@@ -257,16 +258,16 @@ class PyPercentLoader:
             nb_py = f.read()
         nb_lines = nb_py.split('\n')
         cells = []
-        cell = []
+        cell_source = []
+        execution_count = 0
         for line in nb_lines:
             if line == '# [markdown]\n':
-                cells.append(MarkdownCell(id, cell))
-                cell = []
+                cells.append(MarkdownCell(0, cell_source))
+                cell_source = []
             elif line == '# [code]\n':
-               cells.append(CodeCell(id, cell, execution_count))
-                cell = []
-                ismarkdown = False
+                cells.append(CodeCell(0, cell_source, execution_count))
+                execution_count += 1
+                cell_source = []
             else :
-                cell.append(line)
+                cell_source.append(line + '\n')
         return Notebook(self.version, cells)
-        pass

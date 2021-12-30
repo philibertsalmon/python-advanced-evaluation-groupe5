@@ -169,8 +169,17 @@ class PyPercentSerializer:
     def to_py_percent(self):
         r"""Converts the notebook to a string in py-percent format.
         """
-        return n0.to_percent(self.notebook)
-
+        text = ""
+        for cell in self.notebook:
+            if isinstance(cell, MarkdownCell):
+                text += "# %% [markdown]\n# "
+                text += '# '.join(cell.source)
+                text += "\n\n"
+            if isinstance(cell, CodeCell):
+                text += "# %%\n"
+                text += ''.join(cell.source)
+                text += "\n\n"
+        return text[:-2]
 
     def to_file(self, filename):
         r"""Serializes the notebook to a file
@@ -185,7 +194,7 @@ class PyPercentSerializer:
                 >>> s.to_file("samples/hello-world-serialized-py-percent.py")
         """
         with open(filename, 'a') as f:
-            f.write(self.to_py_percent)
+            f.write(self.to_py_percent())
 
 class Serializer:
     r"""Serializes a Jupyter Notebook to a file.
